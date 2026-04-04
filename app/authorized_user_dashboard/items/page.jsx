@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   Home, 
   Package, 
@@ -31,32 +32,220 @@ const ItemsPage = () => {
 
   // Categories for filter and selection
   const categories = [
-    'Vegetables',
-    'Fruits',
-    'Meat',
-    'Seafood',
-    'Dairy',
-    'Grains',
-    'Spices',
-    'Beverages',
-    'Other'
-  ];
+  "Bakery Items",
+  "Barbecue Items",
+  "Basmati Rice",
+  "Beans",
+  "Beef",
+  "Beverages",
+  "Biryani Ingredients",
+  "Biscuits",
+  "Bread",
+  "Breakfast Items",
+  "Broths",
+  "Butter",
+  "Cakes",
+  "Canned Foods",
+  "Carbonated Drinks",
+  "Cereals",
+  "Cheese",
+  "Chicken",
+  "Chili Sauces",
+  "Chocolate",
+  "Chutneys",
+  "Cleaning Supplies",
+  "Coffee",
+  "Condiments",
+  "Cooking Oils",
+  "Cooking Pastes",
+  "Corn Products",
+  "Cream",
+  "Dairy Products",
+  "Desserts",
+  "Dips",
+  "Disposable Items",
+  "Dried Fruits",
+  "Egg Products",
+  "Eggs",
+  "Energy Drinks",
+  "Fast Food Ingredients",
+  "Fish",
+  "Flour",
+  "Food Color",
+  "Food Packaging",
+  "Food Seasonings",
+  "Frozen Foods",
+  "Fruit Juices",
+  "Fruits",
+  "Garlic Products",
+  "Ghee",
+  "Grains",
+  "Green Vegetables",
+  "Herbs",
+  "Honey",
+  "Ice Cream",
+  "Instant Foods",
+  "Jam",
+  "Juices",
+  "Ketchup",
+  "Kitchen Equipment",
+  "Kitchen Tools",
+  "Lentils",
+  "Mayonnaise",
+  "Meat",
+  "Milk",
+  "Mineral Water",
+  "Mutton",
+  "Noodles",
+  "Nuts",
+  "Oil",
+  "Olives",
+  "Other",
+  "Pasta",
+  "Pickles",
+  "Pizza Ingredients",
+  "Plastic Containers",
+  "Poultry",
+  "Powdered Spices",
+  "Ready To Cook",
+  "Rice",
+  "Salad Ingredients",
+  "Salt",
+  "Sauces",
+  "Seafood",
+  "Seeds",
+  "Snacks",
+  "Soft Drinks",
+  "Soup Ingredients",
+  "Soy Products",
+  "Spices",
+  "Sugar",
+  "Sweets",
+  "Syrups",
+  "Tea",
+  "Tomato Products",
+  "Vegetable Oils",
+  "Vegetables",
+  "Vinegar",
+  "Water",
+  "Wheat Products",
+  "Wrap Ingredients",
+  "Yogurt",
+  "Others"
+];
 
   // Units of measurement
-  const units = [
-    'kg',
-    'g',
-    'lb',
-    'oz',
-    'L',
-    'mL',
-    'pcs',
-    'dozen',
-    'box',
-    'bag',
-    'bottle',
-    'can'
-  ];
+ const units = [
+  "Ampere",
+  "Bag",
+  "Bar",
+  "Barrel",
+  "Batch",
+  "Block",
+  "Board",
+  "Bottle",
+  "Box",
+  "Bucket",
+  "Bundle",
+  "Bunch",
+  "Bushel",
+  "Can",
+  "Capsule",
+  "Carton",
+  "Case",
+  "Centigram",
+  "Centiliter",
+  "Centimeter",
+  "Container",
+  "Crate",
+  "Cubic Centimeter",
+  "Cubic Foot",
+  "Cubic Inch",
+  "Cubic Meter",
+  "Cup",
+  "Day",
+  "Decagram",
+  "Deciliter",
+  "Decimeter",
+  "Dozen",
+  "Drum",
+  "Each",
+  "Foot",
+  "Gallon",
+  "Gram",
+  "Gross",
+  "Half Dozen",
+  "Hour",
+  "Inch",
+  "Jar",
+  "Jug",
+  "Kilogram",
+  "Kiloliter",
+  "Kilometer",
+  "Kit",
+  "Liter",
+  "Load",
+  "Lot",
+  "Meter",
+  "Microgram",
+  "Milligram",
+  "Milliliter",
+  "Millimeter",
+  "Minute",
+  "Month",
+  "Nanogram",
+  "Ounce",
+  "Pack",
+  "Packet",
+  "Pad",
+  "Pail",
+  "Pair",
+  "Pallet",
+  "Panel",
+  "Part",
+  "Piece",
+  "Pint",
+  "Plate",
+  "Portion",
+  "Pouch",
+  "Pound",
+  "Quart",
+  "Ream",
+  "Roll",
+  "Room",
+  "Sack",
+  "Sample",
+  "Second",
+  "Serving",
+  "Set",
+  "Sheet",
+  "Shelf",
+  "Slice",
+  "Spool",
+  "Square Centimeter",
+  "Square Foot",
+  "Square Inch",
+  "Square Meter",
+  "Stick",
+  "Stone",
+  "Strip",
+  "Tablespoon",
+  "Tank",
+  "Teaspoon",
+  "Tin",
+  "Ton",
+  "Tray",
+  "Tube",
+  "Unit",
+  "Vial",
+  "Volt",
+  "Watt",
+  "Week",
+  "Yard",
+  "Year",
+  "Others",
+
+];
 
   // Mock data - In real app, fetch from MongoDB
   useEffect(() => {
@@ -64,23 +253,20 @@ const ItemsPage = () => {
   }, []);
 
   const fetchItems = async () => {
-    // Replace with actual API call
-    // const response = await fetch('/api/items');
-    // const data = await response.json();
-    // setItems(data);
-    
-    // Mock data for demonstration
-    const mockItems = [
-      { _id: '1', item_name: 'Tomatoes', unit: 'kg', category: 'Vegetables' },
-      { _id: '2', item_name: 'Chicken Breast', unit: 'kg', category: 'Meat' },
-      { _id: '3', item_name: 'Basmati Rice', unit: 'kg', category: 'Grains' },
-      { _id: '4', item_name: 'Olive Oil', unit: 'L', category: 'Other' },
-      { _id: '5', item_name: 'Salt', unit: 'g', category: 'Spices' },
-      { _id: '6', item_name: 'Milk', unit: 'L', category: 'Dairy' },
-      { _id: '7', item_name: 'Apples', unit: 'kg', category: 'Fruits' },
-      { _id: '8', item_name: 'Garlic', unit: 'g', category: 'Spices' },
-    ];
-    setItems(mockItems);
+    try {
+      const response = await fetch('/api/items', { credentials: 'include' });
+      if (response.status === 401) {
+        window.location.href = '/';
+        return;
+      }
+      if (!response.ok) {
+        throw new Error('Failed to load items');
+      }
+      const data = await response.json();
+      setItems(data);
+    } catch {
+      setItems([]);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -99,30 +285,49 @@ const ItemsPage = () => {
       return;
     }
 
+    const payload = {
+      item_name: currentItem.item_name,
+      unit: currentItem.unit,
+      category: currentItem.category,
+    };
+
     if (isEditing && currentItem._id) {
-      // Update existing item
-      // await fetch(`/api/items/${currentItem._id}`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(currentItem)
-      // });
-      
-      setItems(items.map(item => 
-        item._id === currentItem._id ? currentItem : item
-      ));
+      const res = await fetch(`/api/items/${currentItem._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      const err = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        window.location.href = '/';
+        return;
+      }
+      if (!res.ok) {
+        alert(err.error || 'Could not update item');
+        return;
+      }
       setSuccessMessage('Item updated successfully!');
     } else {
-      // Add new item
-      const newItem = { ...currentItem, _id: Date.now().toString() };
-      // await fetch('/api/items', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(currentItem)
-      // });
-      
-      setItems([...items, newItem]);
+      const res = await fetch('/api/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      const err = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        window.location.href = '/';
+        return;
+      }
+      if (!res.ok) {
+        alert(err.error || 'Could not add item');
+        return;
+      }
       setSuccessMessage('Item added successfully!');
     }
+
+    await fetchItems();
     
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 3000);
@@ -138,13 +343,24 @@ const ItemsPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
-      // await fetch(`/api/items/${id}`, { method: 'DELETE' });
-      setItems(items.filter(item => item._id !== id));
-      setSuccessMessage('Item deleted successfully!');
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
+    if (!window.confirm('Are you sure you want to delete this item?')) return;
+    const res = await fetch(`/api/items/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (res.status === 401) {
+      window.location.href = '/';
+      return;
     }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Could not delete item');
+      return;
+    }
+    await fetchItems();
+    setSuccessMessage('Item deleted successfully!');
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 3000);
   };
 
   const resetForm = () => {
@@ -172,14 +388,14 @@ const ItemsPage = () => {
         {/* Breadcrumb */}
         <div className="mb-8">
           <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <a href="/" className="hover:text-emerald-600 transition-colors flex items-center gap-1">
+            <Link href="/" className="hover:text-emerald-600 transition-colors flex items-center gap-1">
               <Home className="w-4 h-4" />
               <span>Home</span>
-            </a>
+            </Link>
             <ChevronRight className="w-4 h-4 text-gray-400" />
-            <a href="/authorized_user_dashboard" className="hover:text-emerald-600 transition-colors">
+            <Link href="/authorized_user_dashboard" className="hover:text-emerald-600 transition-colors">
               Dashboard
-            </a>
+            </Link>
             <ChevronRight className="w-4 h-4 text-gray-400" />
             <span className="text-gray-900 font-semibold">Items</span>
           </div>

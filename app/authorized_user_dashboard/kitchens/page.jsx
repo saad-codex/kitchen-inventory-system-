@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   Home, 
   Building2, 
@@ -11,7 +12,6 @@ import {
   Trash2,
   Save,
   X,
-  Search,
   MapPin,
   UtensilsCrossed
 } from 'lucide-react';
@@ -34,19 +34,18 @@ const KitchensPage = () => {
   }, []);
 
   const fetchKitchens = async () => {
-    // Replace with actual API call
-    // const response = await fetch('/api/kitchens');
-    // const data = await response.json();
-    // setKitchens(data);
-    
-    // Mock data for demonstration
-    const mockKitchens = [
-      { _id: '1', kitchen_name: 'Main Kitchen', location: '1st Floor, Main Building' },
-      { _id: '2', kitchen_name: 'Banquet Kitchen', location: 'Ground Floor, Event Hall' },
-      { _id: '3', kitchen_name: 'Pastry Kitchen', location: '2nd Floor, Bakery Section' },
-      { _id: '4', kitchen_name: 'Prep Kitchen', location: 'Basement, Food Prep Area' },
-    ];
-    setKitchens(mockKitchens);
+    try {
+      const response = await fetch('/api/kitchens', { credentials: 'include' });
+      if (response.status === 401) {
+        window.location.href = '/';
+        return;
+      }
+      if (!response.ok) throw new Error('Failed');
+      const data = await response.json();
+      setKitchens(data);
+    } catch {
+      setKitchens([]);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -65,30 +64,48 @@ const KitchensPage = () => {
       return;
     }
 
+    const payload = {
+      kitchen_name: currentKitchen.kitchen_name,
+      location: currentKitchen.location,
+    };
+
     if (isEditing && currentKitchen._id) {
-      // Update existing kitchen
-      // await fetch(`/api/kitchens/${currentKitchen._id}`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(currentKitchen)
-      // });
-      
-      setKitchens(kitchens.map(kitchen => 
-        kitchen._id === currentKitchen._id ? currentKitchen : kitchen
-      ));
+      const res = await fetch(`/api/kitchens/${currentKitchen._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      const err = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        window.location.href = '/';
+        return;
+      }
+      if (!res.ok) {
+        alert(err.error || 'Could not update kitchen');
+        return;
+      }
       setSuccessMessage('Kitchen updated successfully!');
     } else {
-      // Add new kitchen
-      const newKitchen = { ...currentKitchen, _id: Date.now().toString() };
-      // await fetch('/api/kitchens', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(currentKitchen)
-      // });
-      
-      setKitchens([...kitchens, newKitchen]);
+      const res = await fetch('/api/kitchens', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      const err = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        window.location.href = '/';
+        return;
+      }
+      if (!res.ok) {
+        alert(err.error || 'Could not add kitchen');
+        return;
+      }
       setSuccessMessage('Kitchen added successfully!');
     }
+
+    await fetchKitchens();
     
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 3000);
@@ -104,13 +121,24 @@ const KitchensPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this kitchen?')) {
-      // await fetch(`/api/kitchens/${id}`, { method: 'DELETE' });
-      setKitchens(kitchens.filter(kitchen => kitchen._id !== id));
-      setSuccessMessage('Kitchen deleted successfully!');
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
+    if (!window.confirm('Are you sure you want to delete this kitchen?')) return;
+    const res = await fetch(`/api/kitchens/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (res.status === 401) {
+      window.location.href = '/';
+      return;
     }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Could not delete kitchen');
+      return;
+    }
+    await fetchKitchens();
+    setSuccessMessage('Kitchen deleted successfully!');
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 3000);
   };
 
   const resetForm = () => {
@@ -133,14 +161,14 @@ const KitchensPage = () => {
         {/* Breadcrumb */}
         <div className="mb-8">
           <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <a href="/" className="hover:text-emerald-600 transition-colors flex items-center gap-1">
+            <Link href="/" className="hover:text-emerald-600 transition-colors flex items-center gap-1">
               <Home className="w-4 h-4" />
               <span>Home</span>
-            </a>
+            </Link>
             <ChevronRight className="w-4 h-4 text-gray-400" />
-            <a href="/authorized_user_dashboard" className="hover:text-emerald-600 transition-colors">
+            <Link href="/authorized_user_dashboard" className="hover:text-emerald-600 transition-colors">
               Dashboard
-            </a>
+            </Link>
             <ChevronRight className="w-4 h-4 text-gray-400" />
             <span className="text-gray-900 font-semibold">Kitchens</span>
           </div>

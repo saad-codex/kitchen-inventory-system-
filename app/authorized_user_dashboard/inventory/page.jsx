@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   Home, 
   ClipboardList, 
@@ -17,8 +18,7 @@ import {
   Building2,
   DollarSign,
   Calendar,
-  TrendingUp,
-  AlertCircle
+  TrendingUp
 } from 'lucide-react';
 
 const InventoryPage = () => {
@@ -45,67 +45,35 @@ const InventoryPage = () => {
   }, []);
 
   const fetchData = async () => {
-    // Replace with actual API calls
-    // const inventoryRes = await fetch('/api/inventory');
-    // const kitchensRes = await fetch('/api/kitchens');
-    // const itemsRes = await fetch('/api/items');
-    
-    // Mock data for demonstration
-    const mockKitchens = [
-      { _id: 'kitchen_1', kitchen_name: 'Main Kitchen', location: '1st Floor' },
-      { _id: 'kitchen_2', kitchen_name: 'Banquet Kitchen', location: 'Ground Floor' },
-      { _id: 'kitchen_3', kitchen_name: 'Pastry Kitchen', location: '2nd Floor' },
-    ];
-    
-    const mockItems = [
-      { _id: 'item_1', item_name: 'Tomatoes', unit: 'kg', category: 'Vegetables' },
-      { _id: 'item_2', item_name: 'Chicken Breast', unit: 'kg', category: 'Meat' },
-      { _id: 'item_3', item_name: 'Basmati Rice', unit: 'kg', category: 'Grains' },
-      { _id: 'item_4', item_name: 'Olive Oil', unit: 'L', category: 'Other' },
-    ];
-    
-    const mockInventory = [
-      { 
-        _id: 'inv_1', 
-        kitchen_id: 'kitchen_1', 
-        item_id: 'item_1', 
-        quantity: 50, 
-        price_per_unit: 2.5, 
-        total_price: 125,
-        created_at: new Date('2024-01-15')
-      },
-      { 
-        _id: 'inv_2', 
-        kitchen_id: 'kitchen_1', 
-        item_id: 'item_2', 
-        quantity: 30, 
-        price_per_unit: 8.99, 
-        total_price: 269.7,
-        created_at: new Date('2024-01-15')
-      },
-      { 
-        _id: 'inv_3', 
-        kitchen_id: 'kitchen_2', 
-        item_id: 'item_3', 
-        quantity: 100, 
-        price_per_unit: 1.2, 
-        total_price: 120,
-        created_at: new Date('2024-01-14')
-      },
-      { 
-        _id: 'inv_4', 
-        kitchen_id: 'kitchen_2', 
-        item_id: 'item_4', 
-        quantity: 20, 
-        price_per_unit: 12.99, 
-        total_price: 259.8,
-        created_at: new Date('2024-01-14')
-      },
-    ];
-    
-    setKitchens(mockKitchens);
-    setItems(mockItems);
-    setInventory(mockInventory);
+    try {
+      const [inventoryRes, kitchensRes, itemsRes] = await Promise.all([
+        fetch('/api/inventory', { credentials: 'include' }),
+        fetch('/api/kitchens', { credentials: 'include' }),
+        fetch('/api/items', { credentials: 'include' }),
+      ]);
+      if (inventoryRes.status === 401 || kitchensRes.status === 401 || itemsRes.status === 401) {
+        window.location.href = '/';
+        return;
+      }
+      if (!inventoryRes.ok || !kitchensRes.ok || !itemsRes.ok) {
+        throw new Error('Failed to load data');
+      }
+      const invData = await inventoryRes.json();
+      const kitData = await kitchensRes.json();
+      const itemData = await itemsRes.json();
+      setInventory(
+        invData.map((row) => ({
+          ...row,
+          created_at: row.created_at ? new Date(row.created_at) : new Date(),
+        }))
+      );
+      setKitchens(kitData);
+      setItems(itemData);
+    } catch {
+      setInventory([]);
+      setKitchens([]);
+      setItems([]);
+    }
   };
 
   // Helper function to get kitchen name by ID
@@ -146,26 +114,50 @@ const InventoryPage = () => {
       return;
     }
 
-    const inventoryData = {
-      ...currentInventory,
+    const body = {
+      kitchen_id: currentInventory.kitchen_id,
+      item_id: currentInventory.item_id,
       quantity: parseFloat(currentInventory.quantity),
       price_per_unit: parseFloat(currentInventory.price_per_unit),
-      total_price: parseFloat(currentInventory.total_price),
-      created_at: new Date()
     };
 
     if (isEditing && currentInventory._id) {
-      // Update existing inventory
-      setInventory(inventory.map(item => 
-        item._id === currentInventory._id ? { ...inventoryData, _id: currentInventory._id } : item
-      ));
+      const res = await fetch(`/api/inventory/${currentInventory._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+      const err = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        window.location.href = '/';
+        return;
+      }
+      if (!res.ok) {
+        alert(err.error || 'Could not update inventory');
+        return;
+      }
       setSuccessMessage('Inventory updated successfully!');
     } else {
-      // Add new inventory
-      const newInventory = { ...inventoryData, _id: Date.now().toString() };
-      setInventory([...inventory, newInventory]);
+      const res = await fetch('/api/inventory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+      const err = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        window.location.href = '/';
+        return;
+      }
+      if (!res.ok) {
+        alert(err.error || 'Could not add inventory');
+        return;
+      }
       setSuccessMessage('Inventory added successfully!');
     }
+
+    await fetchData();
     
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 3000);
@@ -188,12 +180,24 @@ const InventoryPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this inventory item?')) {
-      setInventory(inventory.filter(item => item._id !== id));
-      setSuccessMessage('Inventory deleted successfully!');
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
+    if (!window.confirm('Are you sure you want to delete this inventory item?')) return;
+    const res = await fetch(`/api/inventory/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (res.status === 401) {
+      window.location.href = '/';
+      return;
     }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Could not delete inventory row');
+      return;
+    }
+    await fetchData();
+    setSuccessMessage('Inventory deleted successfully!');
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 3000);
   };
 
   const resetForm = () => {
@@ -228,14 +232,14 @@ const InventoryPage = () => {
         {/* Breadcrumb */}
         <div className="mb-8">
           <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <a href="/" className="hover:text-emerald-600 transition-colors flex items-center gap-1">
+            <Link href="/" className="hover:text-emerald-600 transition-colors flex items-center gap-1">
               <Home className="w-4 h-4" />
               <span>Home</span>
-            </a>
+            </Link>
             <ChevronRight className="w-4 h-4 text-gray-400" />
-            <a href="/authorized_user_dashboard" className="hover:text-emerald-600 transition-colors">
+            <Link href="/authorized_user_dashboard" className="hover:text-emerald-600 transition-colors">
               Dashboard
-            </a>
+            </Link>
             <ChevronRight className="w-4 h-4 text-gray-400" />
             <span className="text-gray-900 font-semibold">Inventory</span>
           </div>
@@ -389,7 +393,7 @@ const InventoryPage = () => {
                         <span className="text-gray-600">${inv.price_per_unit}</span>
                       </td>
                       <td className="p-4">
-                        <span className="font-semibold text-emerald-600">${inv.total_price.toFixed(2)}</span>
+                        <span className="font-semibold text-emerald-600">${Number(inv.total_price).toFixed(2)}</span>
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-1">

@@ -1,29 +1,64 @@
 // app/authorized_user_dashboard/page.tsx
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { 
   Home, 
   Package, 
-  UtensilsCrossed,  // Changed from Kitchen
+  UtensilsCrossed,
   ClipboardList, 
   BarChart3, 
   ChevronRight,
   TrendingUp,
   AlertCircle,
   CheckCircle,
-  Building2,        // Alternative kitchen icon
-  Warehouse         // For inventory alternative
+  Building2,
+  LogOut,
 } from 'lucide-react';
 
 const DashboardPage = () => {
-  // Sample stats data
-  const stats = [
-    { label: 'Total Items', value: '156', change: '+12%', icon: Package, color: 'bg-blue-500' },
-    { label: 'Active Kitchens', value: '3', change: '+0%', icon: UtensilsCrossed, color: 'bg-emerald-500' },
-    { label: 'Low Stock', value: '8', change: '-2', icon: AlertCircle, color: 'bg-amber-500' },
-    { label: 'Total Orders', value: '1,234', change: '+23%', icon: TrendingUp, color: 'bg-purple-500' },
-  ];
+  const [userName, setUserName] = useState('');
+  const [statsData, setStatsData] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [meRes, statsRes] = await Promise.all([
+          fetch('/api/auth/me', { credentials: 'include' }),
+          fetch('/api/dashboard/stats', { credentials: 'include' }),
+        ]);
+        const me = await meRes.json();
+        const statsJson = await statsRes.json();
+        if (cancelled) return;
+        if (me?.user?.name) setUserName(me.user.name);
+        if (statsRes.ok && statsJson) setStatsData(statsJson);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const stats = statsData
+    ? [
+        { label: 'Total Items', value: String(statsData.totalItems ?? 0), change: '—', icon: Package, color: 'bg-blue-500' },
+        { label: 'Active Kitchens', value: String(statsData.activeKitchens ?? 0), change: '—', icon: UtensilsCrossed, color: 'bg-emerald-500' },
+        { label: 'Low Stock', value: String(statsData.lowStock ?? 0), change: '—', icon: AlertCircle, color: 'bg-amber-500' },
+        { label: 'Inventory rows', value: String(statsData.totalOrders ?? 0), change: '—', icon: TrendingUp, color: 'bg-purple-500' },
+      ]
+    : [
+        { label: 'Total Items', value: '—', change: '…', icon: Package, color: 'bg-blue-500' },
+        { label: 'Active Kitchens', value: '—', change: '…', icon: UtensilsCrossed, color: 'bg-emerald-500' },
+        { label: 'Low Stock', value: '—', change: '…', icon: AlertCircle, color: 'bg-amber-500' },
+        { label: 'Inventory rows', value: '—', change: '…', icon: TrendingUp, color: 'bg-purple-500' },
+      ];
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    window.location.href = '/';
+  };
 
   const tiles = [
     {
@@ -34,7 +69,7 @@ const DashboardPage = () => {
       color: 'from-blue-500 to-blue-600',
       bgColor: 'bg-blue-50',
       iconColor: 'text-blue-600',
-      stats: '245 Items',
+      stats: 'Items',
     },
     {
       title: 'Kitchens',
@@ -44,7 +79,7 @@ const DashboardPage = () => {
       color: 'from-emerald-500 to-emerald-600',
       bgColor: 'bg-emerald-50',
       iconColor: 'text-emerald-600',
-      stats: '3 Kitchens',
+      stats: 'Kitchens',
     },
     {
       title: 'Inventory',
@@ -54,7 +89,7 @@ const DashboardPage = () => {
       color: 'from-amber-500 to-amber-600',
       bgColor: 'bg-amber-50',
       iconColor: 'text-amber-600',
-      stats: '156 Items',
+      stats: 'Stock',
     },
     {
       title: 'Reports',
@@ -72,13 +107,23 @@ const DashboardPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Main Content */}
       <div className="p-6 md:p-8">
+        <div className="flex justify-end mb-4">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            Log out
+          </button>
+        </div>
         {/* Stylish Breadcrumb */}
         <div className="mb-8">
           <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <a href="/" className="hover:text-emerald-600 transition-colors flex items-center gap-1">
+            <Link href="/" className="hover:text-emerald-600 transition-colors flex items-center gap-1">
               <Home className="w-4 h-4" />
               <span>Home</span>
-            </a>
+            </Link>
             <ChevronRight className="w-4 h-4 text-gray-400" />
             <span className="text-gray-900 font-semibold">Dashboard</span>
           </div>
@@ -86,10 +131,14 @@ const DashboardPage = () => {
           {/* Page Header */}
           <div className="mt-4">
             <h1 className="text-3xl md:text-4xl font-bold text-gray-800">
-              Welcome Back, <span className="text-emerald-600">Saad!</span>
+              Welcome Back{userName ? (
+                <>, <span className="text-emerald-600">{userName}</span>!</>
+              ) : (
+                <>!</>
+              )}
             </h1>
             <p className="text-gray-500 mt-2">
-              Here's what's happening with your kitchen management system today.
+              Here&apos;s what&apos;s happening with your kitchen management system today.
             </p>
           </div>
         </div>

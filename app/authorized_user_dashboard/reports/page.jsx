@@ -1,7 +1,8 @@
 // app/authorized_user_dashboard/reports/page.jsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { 
   Home, 
   BarChart3, 
@@ -37,103 +38,81 @@ const ReportsPage = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Mock data - In real app, fetch from MongoDB
+  const fetchData = async () => {
+    try {
+      const [inventoryRes, kitchensRes, itemsRes] = await Promise.all([
+        fetch('/api/inventory', { credentials: 'include' }),
+        fetch('/api/kitchens', { credentials: 'include' }),
+        fetch('/api/items', { credentials: 'include' }),
+      ]);
+      if (inventoryRes.status === 401 || kitchensRes.status === 401 || itemsRes.status === 401) {
+        window.location.href = '/';
+        return;
+      }
+      if (!inventoryRes.ok || !kitchensRes.ok || !itemsRes.ok) {
+        throw new Error('Failed');
+      }
+      const invData = await inventoryRes.json();
+      const kitData = await kitchensRes.json();
+      const itemData = await itemsRes.json();
+      const mapped = invData.map((row) => ({
+        ...row,
+        quantity: Number(row.quantity),
+        price_per_unit: Number(row.price_per_unit),
+        total_price: Number(row.total_price),
+        created_at: row.created_at ? new Date(row.created_at) : new Date(),
+      }));
+      setKitchens(kitData);
+      setItems(itemData);
+      setInventory(mapped);
+    } catch {
+      setKitchens([]);
+      setItems([]);
+      setInventory([]);
+    }
+  };
+
+  const filterReports = useCallback(() => {
+    let filtered = [...inventory];
+
+    if (dateFrom && dateTo) {
+      const fromDate = new Date(dateFrom);
+      const toDate = new Date(dateTo);
+      toDate.setHours(23, 59, 59, 999);
+
+      filtered = filtered.filter((inv) => {
+        const invDate = new Date(inv.created_at);
+        return invDate >= fromDate && invDate <= toDate;
+      });
+    } else if (dateFrom) {
+      const fromDate = new Date(dateFrom);
+      filtered = filtered.filter((inv) => new Date(inv.created_at) >= fromDate);
+    } else if (dateTo) {
+      const toDate = new Date(dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      filtered = filtered.filter((inv) => new Date(inv.created_at) <= toDate);
+    }
+
+    if (selectedItem !== 'all') {
+      filtered = filtered.filter((inv) => inv.item_id === selectedItem);
+    }
+
+    if (selectedKitchen !== 'all') {
+      filtered = filtered.filter((inv) => inv.kitchen_id === selectedKitchen);
+    }
+
+    filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    setFilteredReports(filtered);
+  }, [dateFrom, dateTo, selectedItem, selectedKitchen, inventory]);
+
   useEffect(() => {
     fetchData();
   }, []);
 
   useEffect(() => {
     filterReports();
-  }, [dateFrom, dateTo, selectedItem, selectedKitchen, inventory]);
-
-  const fetchData = async () => {
-    // Replace with actual API calls
-    const mockKitchens = [
-      { _id: 'kitchen_1', kitchen_name: 'Main Kitchen', location: '1st Floor' },
-      { _id: 'kitchen_2', kitchen_name: 'Banquet Kitchen', location: 'Ground Floor' },
-      { _id: 'kitchen_3', kitchen_name: 'Pastry Kitchen', location: '2nd Floor' },
-    ];
-    
-    const mockItems = [
-      { _id: 'item_1', item_name: 'Tomatoes', unit: 'kg', category: 'Vegetables' },
-      { _id: 'item_2', item_name: 'Chicken Breast', unit: 'kg', category: 'Meat' },
-      { _id: 'item_3', item_name: 'Basmati Rice', unit: 'kg', category: 'Grains' },
-      { _id: 'item_4', item_name: 'Olive Oil', unit: 'L', category: 'Other' },
-      { _id: 'item_5', item_name: 'Garlic', unit: 'g', category: 'Spices' },
-      { _id: 'item_6', item_name: 'Milk', unit: 'L', category: 'Dairy' },
-    ];
-    
-    const mockInventory = [
-      { 
-        _id: 'inv_1', 
-        kitchen_id: 'kitchen_1', 
-        item_id: 'item_1', 
-        quantity: 50, 
-        price_per_unit: 2.5, 
-        total_price: 125,
-        created_at: new Date('2024-01-15')
-      },
-      { 
-        _id: 'inv_2', 
-        kitchen_id: 'kitchen_1', 
-        item_id: 'item_2', 
-        quantity: 30, 
-        price_per_unit: 8.99, 
-        total_price: 269.7,
-        created_at: new Date('2024-01-15')
-      },
-      { 
-        _id: 'inv_3', 
-        kitchen_id: 'kitchen_2', 
-        item_id: 'item_3', 
-        quantity: 100, 
-        price_per_unit: 1.2, 
-        total_price: 120,
-        created_at: new Date('2024-01-14')
-      },
-      { 
-        _id: 'inv_4', 
-        kitchen_id: 'kitchen_2', 
-        item_id: 'item_4', 
-        quantity: 20, 
-        price_per_unit: 12.99, 
-        total_price: 259.8,
-        created_at: new Date('2024-01-14')
-      },
-      { 
-        _id: 'inv_5', 
-        kitchen_id: 'kitchen_3', 
-        item_id: 'item_5', 
-        quantity: 500, 
-        price_per_unit: 0.5, 
-        total_price: 250,
-        created_at: new Date('2024-01-13')
-      },
-      { 
-        _id: 'inv_6', 
-        kitchen_id: 'kitchen_1', 
-        item_id: 'item_6', 
-        quantity: 40, 
-        price_per_unit: 1.5, 
-        total_price: 60,
-        created_at: new Date('2024-01-13')
-      },
-      { 
-        _id: 'inv_7', 
-        kitchen_id: 'kitchen_2', 
-        item_id: 'item_1', 
-        quantity: 35, 
-        price_per_unit: 2.5, 
-        total_price: 87.5,
-        created_at: new Date('2024-01-12')
-      },
-    ];
-    
-    setKitchens(mockKitchens);
-    setItems(mockItems);
-    setInventory(mockInventory);
-    setFilteredReports(mockInventory);
-  };
+  }, [filterReports]);
 
   // Helper functions
   const getKitchenName = (kitchenId) => {
@@ -183,41 +162,6 @@ const ReportsPage = () => {
     setDateTo('');
     setSelectedItem('all');
     setSelectedKitchen('all');
-  };
-
-  // Filter reports
-  const filterReports = () => {
-    let filtered = [...inventory];
-
-    if (dateFrom && dateTo) {
-      const fromDate = new Date(dateFrom);
-      const toDate = new Date(dateTo);
-      toDate.setHours(23, 59, 59, 999);
-      
-      filtered = filtered.filter(inv => {
-        const invDate = new Date(inv.created_at);
-        return invDate >= fromDate && invDate <= toDate;
-      });
-    } else if (dateFrom) {
-      const fromDate = new Date(dateFrom);
-      filtered = filtered.filter(inv => new Date(inv.created_at) >= fromDate);
-    } else if (dateTo) {
-      const toDate = new Date(dateTo);
-      toDate.setHours(23, 59, 59, 999);
-      filtered = filtered.filter(inv => new Date(inv.created_at) <= toDate);
-    }
-
-    if (selectedItem !== 'all') {
-      filtered = filtered.filter(inv => inv.item_id === selectedItem);
-    }
-
-    if (selectedKitchen !== 'all') {
-      filtered = filtered.filter(inv => inv.kitchen_id === selectedKitchen);
-    }
-
-    filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    
-    setFilteredReports(filtered);
   };
 
   // Generate PDF
@@ -271,14 +215,14 @@ const ReportsPage = () => {
           report.quantity.toString(),
           item.unit,
           `$${report.price_per_unit}`,
-          `$${report.total_price.toFixed(2)}`,
+          `$${Number(report.total_price).toFixed(2)}`,
           new Date(report.created_at).toLocaleDateString()
         ];
       });
       
       // Add summary statistics
       const totalQuantity = filteredReports.reduce((sum, item) => sum + item.quantity, 0);
-      const totalValue = filteredReports.reduce((sum, item) => sum + item.total_price, 0);
+      const totalValue = filteredReports.reduce((sum, item) => sum + Number(item.total_price), 0);
       
       doc.setFontSize(11);
       doc.setTextColor(0, 0, 0);
@@ -351,8 +295,8 @@ const ReportsPage = () => {
     return grouped;
   };
 
-  const totalQuantity = filteredReports.reduce((sum, item) => sum + item.quantity, 0);
-  const totalValue = filteredReports.reduce((sum, item) => sum + item.total_price, 0);
+  const totalQuantity = filteredReports.reduce((sum, item) => sum + Number(item.quantity), 0);
+  const totalValue = filteredReports.reduce((sum, item) => sum + Number(item.total_price), 0);
   const uniqueItems = new Set(filteredReports.map(item => item.item_id)).size;
   const uniqueKitchens = new Set(filteredReports.map(item => item.kitchen_id)).size;
 
@@ -364,14 +308,14 @@ const ReportsPage = () => {
         {/* Breadcrumb */}
         <div className="mb-8">
           <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <a href="/" className="hover:text-emerald-600 transition-colors flex items-center gap-1">
+            <Link href="/" className="hover:text-emerald-600 transition-colors flex items-center gap-1">
               <Home className="w-4 h-4" />
               <span>Home</span>
-            </a>
+            </Link>
             <ChevronRight className="w-4 h-4 text-gray-400" />
-            <a href="/authorized_user_dashboard" className="hover:text-emerald-600 transition-colors">
+            <Link href="/authorized_user_dashboard" className="hover:text-emerald-600 transition-colors">
               Dashboard
-            </a>
+            </Link>
             <ChevronRight className="w-4 h-4 text-gray-400" />
             <span className="text-gray-900 font-semibold">Reports</span>
           </div>
@@ -606,7 +550,7 @@ const ReportsPage = () => {
                           <td className="p-3 font-semibold text-gray-800">{report.quantity}</td>
                           <td className="p-3 text-gray-600">{itemDetails.unit}</td>
                           <td className="p-3 text-gray-600">${report.price_per_unit}</td>
-                          <td className="p-3 font-semibold text-emerald-600">${report.total_price.toFixed(2)}</td>
+                          <td className="p-3 font-semibold text-emerald-600">${Number(report.total_price).toFixed(2)}</td>
                         </tr>
                       );
                     })}
@@ -615,7 +559,7 @@ const ReportsPage = () => {
                         Subtotal:
                       </td>
                       <td className="p-3 font-bold text-emerald-700">
-                        ${reports.reduce((sum, r) => sum + r.total_price, 0).toFixed(2)}
+                        ${reports.reduce((sum, r) => sum + Number(r.total_price), 0).toFixed(2)}
                       </td>
                     </tr>
                   </tbody>
